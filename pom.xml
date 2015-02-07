@@ -24,6 +24,9 @@
         <maven.compiler.target>1.6</maven.compiler.target>
         <encoding>UTF-8</encoding>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <kafka.version>0.8.2.1</kafka.version>
+        <scala.version>2.10</scala.version>
+        <jets3t.version>0.7.1</jets3t.version>
     </properties>
 
     <repositories>
@@ -51,12 +54,12 @@
         <dependency>
             <groupId>net.java.dev.jets3t</groupId>
             <artifactId>jets3t</artifactId>
-            <version>0.7.1</version>
+            <version>${jets3t.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka_2.10</artifactId>
-            <version>0.8.1.1</version>
+            <artifactId>kafka_${scala.version}</artifactId>
+            <version>${kafka.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.slf4j</groupId>
@@ -121,7 +124,7 @@
         </dependency>
         <dependency>
             <groupId>com.twitter</groupId>
-            <artifactId>ostrich_2.10</artifactId>
+            <artifactId>ostrich_${scala.version}</artifactId>
             <version>9.2.1</version>
         </dependency>
         <dependency>
