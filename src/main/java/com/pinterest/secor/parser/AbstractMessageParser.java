@@ -16,12 +16,31 @@
  */
 package com.pinterest.secor.parser;
 
+import com.pinterest.secor.common.SecorConfig;
 import com.pinterest.secor.common.Components;
 import com.pinterest.secor.message.Message;
 
+// TODO(pawel): should we offer a multi-message parser capable of parsing multiple types of
+// messages?  E.g., it could be implemented as a composite trying out different parsers and using
+// the one that works.  What is the performance cost of such approach?
+
 /**
  * Message parser extracts components from messages.
+ *
+ * @author Pawel Garbacki (pawel@pinterest.com)
  */
-public interface MessageParser {
-    public Components parse(Message message) throws Exception;
+public abstract class AbstractMessageParser implements MessageParser {
+    protected SecorConfig mConfig;
+
+    public AbstractMessageParser(SecorConfig config) {
+        mConfig = config;
+    }
+
+    @Override
+    public Components parse(Message message) throws Exception {
+        String[] partitions = extractPartitions(message);
+        return new Components(partitions, message.getTopic(), mConfig.getGeneration());
+    }
+
+    public abstract String[] extractPartitions(Message payload) throws Exception;
 }
