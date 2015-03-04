@@ -145,6 +145,7 @@ public class FileRegistry {
         if (paths == null) {
             return;
         }
+        @SuppressWarnings("unchecked")
         HashSet<LogFilePath> clonedPaths = (HashSet<LogFilePath>) paths.clone();
         for (LogFilePath path : clonedPaths) {
             deletePath(path);
