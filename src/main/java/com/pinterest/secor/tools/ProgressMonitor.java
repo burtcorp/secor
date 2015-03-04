@@ -71,6 +71,7 @@ public class ProgressMonitor {
                 mConfig.getMessageParserClass(), mConfig);
     }
 
+    @SuppressWarnings("unchecked")
     private void makeRequest(String body) throws IOException {
         URL url = new URL("http://" + mConfig.getTsdbHostport() + "/api/put?details");
         HttpURLConnection connection = null;

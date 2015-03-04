@@ -83,6 +83,7 @@ public class LogFileVerifier {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private void filterOffsets(long fromOffset, long toOffset) {
         Iterator iterator = mTopicPartitionToOffsetToFiles.entrySet().iterator();
         while (iterator.hasNext()) {
@@ -117,6 +118,7 @@ public class LogFileVerifier {
         return result;
     }
 
+    @SuppressWarnings("unchecked")
     public void verifyCounts(long fromOffset, long toOffset, int numMessages) throws Exception {
         populateTopicPartitionToOffsetToFiles();
         filterOffsets(fromOffset, toOffset);
@@ -168,6 +170,7 @@ public class LogFileVerifier {
         reader.close();
     }
 
+    @SuppressWarnings("unchecked")
     public void verifySequences(long fromOffset, long toOffset) throws Exception {
         populateTopicPartitionToOffsetToFiles();
         filterOffsets(fromOffset, toOffset);
