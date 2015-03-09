@@ -166,7 +166,7 @@ public class ZookeeperConnector {
             throws Exception {
         ZooKeeper zookeeper = mZookeeperClient.get();
         String offsetPath = getCommittedOffsetPartitionPath(topicPartition);
-        LOG.info("creating missing parents for zookeeper path " + offsetPath);
+        LOG.debug("creating missing parents for zookeeper path " + offsetPath);
         createMissingParents(offsetPath);
         byte[] data = Long.toString(count).getBytes();
         try {

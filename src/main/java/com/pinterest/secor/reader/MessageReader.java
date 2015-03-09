@@ -125,7 +125,6 @@ public class MessageReader {
                                                            message.getKafkaPartition());
         // Skip already committed messages.
         long committedOffsetCount = mOffsetTracker.getTrueCommittedOffsetCount(topicPartition);
-        LOG.debug("read message" + message);
         if (message.getOffset() < committedOffsetCount) {
             LOG.debug("skipping message message " + message + " because its offset precedes " +
                       "committed offset count " + committedOffsetCount);

@@ -152,9 +152,13 @@ public class FileRegistry {
     public void deleteWriter(LogFilePath path) throws IOException {
         FileWriter writer = mWriters.get(path);
         if (writer == null) {
-            LOG.warn("No writer found for path " + path.getLogFilePath());
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("No writer found for path " + path.getLogFilePath());
+            }
         } else {
-            LOG.info("Deleting writer for path " + path.getLogFilePath());
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Deleting writer for path " + path.getLogFilePath());
+            }
             writer.close();
             mWriters.remove(path);
             mCreationTimes.remove(path);
