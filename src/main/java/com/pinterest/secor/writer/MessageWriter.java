@@ -87,7 +87,9 @@ public class MessageWriter {
         		mFileExtension);
         FileWriter writer = mFileRegistry.getOrCreateWriter(path, mCodec);
         writer.write(new KeyValue(message.getOffset(), message.getPayload()));
-        LOG.debug("appended message " + message + " to file " + path.getLogFilePath() +
-                  ".  File length " + writer.getLength());
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("appended message " + message + " to file " + path.getLogFilePath() +
+                      ".  File length " + writer.getLength());
+        }
     }
 }
