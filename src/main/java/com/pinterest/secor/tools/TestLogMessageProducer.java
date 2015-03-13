@@ -40,11 +40,13 @@ public class TestLogMessageProducer extends Thread {
     private final String mTopic;
     private final int mNumMessages;
     private final String mType;
+    private final int mStartKey;
 
-    public TestLogMessageProducer(String topic, int numMessages, String type) {
+    public TestLogMessageProducer(String topic, int numMessages, String type, int startKey) {
         mTopic = topic;
         mNumMessages = numMessages;
         mType = type;
+        mStartKey = startKey;
     }
 
     public void run() {
@@ -83,7 +85,7 @@ public class TestLogMessageProducer extends Thread {
                 throw new RuntimeException("Failed to serialize message " + testMessage, e);
             }
             KeyedMessage<String, byte[]> data = new KeyedMessage<String, byte[]>(
-                mTopic, Integer.toString(i), bytes);
+                mTopic, Integer.toString(mStartKey + i), bytes);
             producer.send(data);
         }
         producer.close();
