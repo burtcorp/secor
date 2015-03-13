@@ -63,6 +63,12 @@ public class TestLogMessageProducerMain {
                 .withArgName("<type>")
                 .withType(String.class)
                 .create("type"));
+        options.addOption(OptionBuilder.withLongOpt("startKey")
+                .withDescription("start key number")
+                .hasArg()
+                .withArgName("<start_key>")
+                .withType(Number.class)
+                .create("s"));
 
         CommandLineParser parser = new GnuParser();
         return parser.parse(options, args);
@@ -73,10 +79,11 @@ public class TestLogMessageProducerMain {
             CommandLine commandLine = parseArgs(args);
             String topic = commandLine.getOptionValue("topic");
             int messages = ((Number) commandLine.getParsedOptionValue("messages")).intValue();
+            int startKey = ((Number) commandLine.getParsedOptionValue("startKey")).intValue();
             int producers = ((Number) commandLine.getParsedOptionValue("producers")).intValue();
             String type = commandLine.getOptionValue("type");
             for (int i = 0; i < producers; ++i) {
-                TestLogMessageProducer producer = new TestLogMessageProducer(topic, messages, type);
+                TestLogMessageProducer producer = new TestLogMessageProducer(topic, messages, type, startKey);
                 producer.start();
             }
         } catch (Throwable t) {

@@ -146,7 +146,7 @@ create_topic() {
 post_messages() {
     run_command "${JAVA} -server -ea -Dlog4j.configuration=log4j.dev.properties \
         -Dconfig=secor.test.backup.properties -cp ${CLASSPATH} \
-        com.pinterest.secor.main.TestLogMessageProducerMain -t test -m $1 -p 1 -type ${MESSAGE_TYPE} > \
+        com.pinterest.secor.main.TestLogMessageProducerMain -t test -m $1 -p 1 -type ${MESSAGE_TYPE} -s ${2:-0} > \
         ${LOGS_DIR}/test_log_message_producer.log 2>&1"
 }
 
@@ -254,7 +254,7 @@ move_offset_back_test() {
     sleep 3
     post_messages $((${MESSAGES}/10))
     set_offsets_in_zookeeper 2
-    post_messages $((${MESSAGES}*9/10))
+    post_messages $((${MESSAGES}*9/10)) $((${MESSAGES}/10))
 
     echo "Waiting ${WAIT_TIME} sec for Secor to upload logs to s3"
     sleep ${WAIT_TIME}
