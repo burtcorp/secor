@@ -7,7 +7,13 @@ addons:
   hosts:
     - test-bucket.localhost
 env:
-  - PATH=$PATH:$HOME/.s3cmd SECOR_LOCAL_S3=true S3CMD=1.0.1
+  matrix:
+    - SUITE=unit
+    - SUITE=integration
+  global:
+    - PATH=$PATH:$HOME/.s3cmd
+    - SECOR_LOCAL_S3=true
+    - S3CMD=1.0.1
 jdk:
   - openjdk7
 before_install:
@@ -18,5 +24,6 @@ before_install:
   - gem install fakes3 -v 0.1.7
 install: make build
 script:
-  - make unit
-  - make integration
+  - make $SUITE
+matrix:
+  fast_finish: true
