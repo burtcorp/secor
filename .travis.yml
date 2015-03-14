@@ -16,6 +16,7 @@ before_install:
   - mv $HOME/s3cmd-$S3CMD $HOME/.s3cmd
   - cd $HOME/.s3cmd && python setup.py install --user && cd -
   - gem install fakes3 -v 0.1.7
+install: make build
 script:
   - make unit
   - make integration
