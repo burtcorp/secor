@@ -52,6 +52,7 @@ public class Uploader {
     private ZookeeperConnector mZookeeperConnector;
     private long mMaxFileSizeBytes;
     private long mMaxFileAgeSeconds;
+    private String mS3Prefix;
 
     public Uploader(SecorConfig config, OffsetTracker offsetTracker, FileRegistry fileRegistry) {
         this(config, offsetTracker, fileRegistry, new ZookeeperConnector(config));
@@ -66,11 +67,19 @@ public class Uploader {
         mZookeeperConnector = zookeeperConnector;
         mMaxFileSizeBytes = mConfig.getMaxFileSizeBytes();
         mMaxFileAgeSeconds = mConfig.getMaxFileAgeSeconds();
+        mS3Prefix = constructS3Prefix();
+    }
+
+    private String constructS3Prefix() {
+        String prefix = "s3n://" + mConfig.getS3Bucket();
+        if (!mConfig.getS3Path().isEmpty()) {
+          prefix = prefix + "/" + mConfig.getS3Path();
+        }
+        return prefix;
     }
 
     private Future<?> upload(LogFilePath localPath) throws Exception {
-        String s3Prefix = "s3n://" + mConfig.getS3Bucket() + "/" + mConfig.getS3Path();
-        LogFilePath s3Path = mFileRegistry.createLogFilePath(s3Prefix,
+        LogFilePath s3Path = mFileRegistry.createLogFilePath(mS3Prefix,
             localPath.getTopic(),
             localPath.getKafkaPartition(),
             localPath.getComponents(),
