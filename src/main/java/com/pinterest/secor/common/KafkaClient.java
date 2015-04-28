@@ -131,9 +131,12 @@ public class KafkaClient {
                 topicPartition.getTopic(), topicPartition.getPartition()).iterator().next();
         ByteBuffer payload = messageAndOffset.message().payload();
         byte[] payloadBytes = new byte[payload.limit()];
+        ByteBuffer key = messageAndOffset.message().key();
+        byte[] keyBytes = new byte[key.limit()];
         payload.get(payloadBytes);
+        key.get(keyBytes);
         return new Message(topicPartition.getTopic(), topicPartition.getPartition(),
-                messageAndOffset.offset(), payloadBytes);
+                messageAndOffset.offset(), keyBytes, payloadBytes);
     }
 
    public SimpleConsumer createConsumer(TopicPartition topicPartition) {
