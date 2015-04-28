@@ -256,6 +256,14 @@ public class SecorConfig {
     	return getString("secor.kafka.perf_topic_prefix");
     }
 
+    public boolean getDeduplicationEnabled() {
+        return mProperties.getBoolean("secor.deduplication.enabled", false);
+    }
+
+    public int getDeduplicationLimit() {
+        return mProperties.getInt("secor.deduplication.limit", 1000);
+    }
+
     private void checkProperty(String name) {
         if (!mProperties.containsKey(name)) {
             throw new RuntimeException("Failed to find required configuration option '" +

@@ -17,6 +17,10 @@
 package com.pinterest.secor.util;
 
 import com.twitter.ostrich.stats.Stats;
+import com.yammer.metrics.Metrics;
+import com.yammer.metrics.core.Meter;
+import com.yammer.metrics.core.MetricName;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Utilities to interact with Ostrich stats exporter.
@@ -40,4 +44,29 @@ public class StatsUtil {
       Stats.incr(name);
     }
 
+    public static Meter newMeter(String group, String type, String name, String eventType) {
+        return StatsUtil.newMeter(group, type, name, eventType, null);
+    }
+
+    public static Meter newMeter(String group, String type, String name, String eventType, String scope) {
+        String mbeanName = createMBeanName(group, type, name, scope);
+        MetricName metricName = new MetricName(group, type, name, scope, mbeanName);
+        return Metrics.newMeter(metricName, eventType, TimeUnit.SECONDS);
+    }
+
+    public static String createMBeanName(String group, String type, String name, String scope) {
+        final StringBuilder nameBuilder = new StringBuilder();
+        nameBuilder.append(group);
+        nameBuilder.append(":type=");
+        nameBuilder.append(type);
+        if (scope != null) {
+            nameBuilder.append(",scope=");
+            nameBuilder.append(scope);
+        }
+        if (name.length() > 0) {
+            nameBuilder.append(",name=");
+            nameBuilder.append(name);
+        }
+        return nameBuilder.toString();
+    }
 }
