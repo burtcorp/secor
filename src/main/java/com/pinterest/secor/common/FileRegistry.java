@@ -125,6 +125,7 @@ public class FileRegistry {
                                  topicPartition.getPartition());
         }
         deleteWriter(path);
+        mCreationTimes.remove(path);
         FileUtil.delete(path.getLogFilePath());
         FileUtil.delete(path.getLogFileCrcPath());
     }
@@ -157,7 +158,6 @@ public class FileRegistry {
             LOG.info("Deleting writer for path " + path.getLogFilePath());
             writer.close();
             mWriters.remove(path);
-            mCreationTimes.remove(path);
         }
     }
 
