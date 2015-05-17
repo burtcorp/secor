@@ -113,6 +113,10 @@ public class Uploader {
                 mFileRegistry.deleteTopicPartition(topicPartition);
                 mZookeeperConnector.setCommittedOffsetCount(topicPartition, lastSeenOffset + 1);
                 mOffsetTracker.setCommittedOffsetCount(topicPartition, lastSeenOffset + 1);
+            } else {
+                LOG.warn("Committed offset changed from " + committedOffsetCount + " to " + zookeeperComittedOffsetCount +
+                    " getting lock for topic " + topicPartition.getTopic() +
+                    " partition " + topicPartition.getPartition());
             }
         } finally {
             mZookeeperConnector.unlock(lockPath);
