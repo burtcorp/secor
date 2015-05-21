@@ -25,6 +25,8 @@ import com.pinterest.secor.io.FileWriter;
 import com.pinterest.secor.io.KeyValue;
 import com.pinterest.secor.message.Message;
 import com.pinterest.secor.message.ParsedMessage;
+import com.pinterest.secor.dedup.Deduplicator;
+import com.pinterest.secor.dedup.DeduplicatorFactory;
 import com.pinterest.secor.util.CompressionUtil;
 import com.pinterest.secor.util.IdUtil;
 import com.pinterest.secor.util.StatsUtil;
@@ -48,6 +50,7 @@ public class MessageWriter {
     private String mFileExtension;
     private CompressionCodec mCodec;
     private String mLocalPrefix;
+    private Deduplicator mDeduplicator;
 
     public MessageWriter(SecorConfig config, OffsetTracker offsetTracker,
                          FileRegistry fileRegistry) throws Exception {
@@ -61,6 +64,7 @@ public class MessageWriter {
             mFileExtension = "";
         }
         mLocalPrefix = mConfig.getLocalPath() + '/' + IdUtil.getLocalMessageDir();
+        mDeduplicator = DeduplicatorFactory.createDeduplicator(mConfig);
     }
 
     public void adjustOffset(Message message) throws IOException {
@@ -70,11 +74,12 @@ public class MessageWriter {
         if (message.getOffset() != lastSeenOffset + 1) {
             StatsUtil.incr("secor.consumer_rebalance_count." + topicPartition.getTopic());
             // There was a rebalancing event since we read the last message.
-            LOG.debug("offset of message " + message +
+            LOG.info("message offset " + message.getOffset() +
                       " does not follow sequentially the last seen offset " + lastSeenOffset +
                       ".  Deleting files in topic " + topicPartition.getTopic() + " partition " +
                       topicPartition.getPartition());
             mFileRegistry.deleteTopicPartition(topicPartition);
+            mDeduplicator.reset(topicPartition);
         }
         mOffsetTracker.setLastSeenOffset(topicPartition, message.getOffset());
     }
@@ -82,14 +87,16 @@ public class MessageWriter {
     public void write(ParsedMessage message) throws Exception {
         TopicPartition topicPartition = new TopicPartition(message.getTopic(),
                                                            message.getKafkaPartition());
-        long offset = mOffsetTracker.getAdjustedCommittedOffsetCount(topicPartition);
-        LogFilePath path = new LogFilePath(mLocalPrefix, mConfig.getGeneration(), offset, message,
-        		mFileExtension);
-        FileWriter writer = mFileRegistry.getOrCreateWriter(path, mCodec);
-        writer.write(new KeyValue(message.getOffset(), message.getPayload()));
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("appended message " + message + " to file " + path.getLogFilePath() +
-                      ".  File length " + writer.getLength());
+        if (!mDeduplicator.isPresent(topicPartition, message.getKey())) {
+            long offset = mOffsetTracker.getAdjustedCommittedOffsetCount(topicPartition);
+            LogFilePath path = new LogFilePath(mLocalPrefix, mConfig.getGeneration(), offset, message,
+                mFileExtension);
+            FileWriter writer = mFileRegistry.getOrCreateWriter(path, mCodec);
+            writer.write(new KeyValue(message.getOffset(), message.getPayload()));
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("appended message " + message + " to file " + path.getLogFilePath() +
+                          ".  File length " + writer.getLength());
+            }
         }
     }
 }
