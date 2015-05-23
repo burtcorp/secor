@@ -16,31 +16,37 @@
  */
 package com.pinterest.secor.message;
 
-import java.lang.String;
+import com.pinterest.secor.common.Components;
 import java.util.Arrays;
 
 /**
- * Parsed message is a Kafka message that has been processed by the parser that extracted its
- * partitions.
+ * Parsed message is a Kafka message that has been processed by the parser
+ * that extract path and filename components from the message.
  *
  * @author Pawel Garbacki (pawel@pinterest.com)
  */
 public class ParsedMessage extends Message {
-    private String[] mPartitions;
+    private Components mComponents;
 
     @Override
     public String toString() {
-        return "ParsedMessage{" + fieldsToString() +  ", mPartitions=" +
-               Arrays.toString(mPartitions) + '}';
+        return "ParsedMessage{" + fieldsToString() +  ", mComponents=" +
+               Arrays.toString(mComponents.getPath()) + "}";
     }
 
-    public ParsedMessage(String topic, int kafkaPartition, long offset, byte[] payload,
-                         String[] mPartitions) {
+    public ParsedMessage(Message message, Components components) {
+        super(message.getTopic(), message.getKafkaPartition(),
+              message.getOffset(), message.getPayload());
+        this.mComponents = components;
+    }
+
+    public ParsedMessage(String topic, int kafkaPartition, long offset,
+                         byte[] payload, Components components) {
         super(topic, kafkaPartition, offset, payload);
-        this.mPartitions = mPartitions;
+        this.mComponents = components;
     }
 
-    public String[] getPartitions() {
-        return mPartitions;
+    public Components getComponents() {
+        return mComponents;
     }
 }

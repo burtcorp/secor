@@ -17,6 +17,7 @@
 package com.pinterest.secor.common;
 
 import com.pinterest.secor.message.ParsedMessage;
+import com.pinterest.secor.util.LogFileUtil;
 import junit.framework.TestCase;
 
 import java.util.Arrays;
@@ -29,10 +30,10 @@ import java.util.Arrays;
 public class LogFilePathTest extends TestCase {
     private static final String PREFIX = "/some_parent_dir";
     private static final String TOPIC = "some_topic";
-    private static final String[] PARTITIONS = {"some_partition", "some_other_partition"};
     private static final int GENERATION = 10;
     private static final int KAFKA_PARTITION = 0;
     private static final long LAST_COMMITTED_OFFSET = 100;
+    private static final String[] PATH_PARTITIONS = {"some_partition", "some_other_partition"};
     private static final String PATH =
         "/some_parent_dir/some_topic/some_partition/some_other_partition/" +
         "10_0_00000000000000000100";
@@ -41,28 +42,30 @@ public class LogFilePathTest extends TestCase {
             ".10_0_00000000000000000100.crc";
 
     private LogFilePath mLogFilePath;
+    private Components mComponents;
 
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        mLogFilePath = new LogFilePath(PREFIX, TOPIC, PARTITIONS, GENERATION, KAFKA_PARTITION,
+        mComponents = new Components(PATH_PARTITIONS, TOPIC, GENERATION);
+        mLogFilePath = new LogFilePath(PREFIX, TOPIC, KAFKA_PARTITION, mComponents, GENERATION,
                                        LAST_COMMITTED_OFFSET, "");
     }
 
     public void testConstructFromMessage() throws Exception {
         ParsedMessage message = new ParsedMessage(TOPIC, KAFKA_PARTITION, 1000,
-                                                  "some_payload".getBytes(), PARTITIONS);
-        LogFilePath logFilePath = new LogFilePath(PREFIX, GENERATION, LAST_COMMITTED_OFFSET,
-                                                  message, "");
+                                                  "some_payload".getBytes(), mComponents);
+        LogFilePath logFilePath = new LogFilePath(PREFIX, message.getTopic(), message.getKafkaPartition(), message.getComponents(), GENERATION,
+            LAST_COMMITTED_OFFSET, "");
         assertEquals(PATH, logFilePath.getLogFilePath());
     }
 
     public void testConstructFromPath() throws Exception {
-        LogFilePath logFilePath = LogFilePath.createFromPath("/some_parent_dir", PATH);
+        LogFilePath logFilePath = LogFileUtil.createFromPath("/some_parent_dir", PATH);
 
         assertEquals(PATH, logFilePath.getLogFilePath());
         assertEquals(TOPIC, logFilePath.getTopic());
-        assertTrue(Arrays.equals(PARTITIONS, logFilePath.getPartitions()));
+        assertEquals(mComponents, logFilePath.getComponents());
         assertEquals(GENERATION, logFilePath.getGeneration());
         assertEquals(KAFKA_PARTITION, logFilePath.getKafkaPartition());
         assertEquals(LAST_COMMITTED_OFFSET, logFilePath.getOffset());
@@ -70,7 +73,7 @@ public class LogFilePathTest extends TestCase {
 
     public void testGetters() throws Exception {
         assertEquals(TOPIC, mLogFilePath.getTopic());
-        assertTrue(Arrays.equals(PARTITIONS, mLogFilePath.getPartitions()));
+        assertEquals(mComponents, mLogFilePath.getComponents());
         assertEquals(GENERATION, mLogFilePath.getGeneration());
         assertEquals(KAFKA_PARTITION, mLogFilePath.getKafkaPartition());
         assertEquals(LAST_COMMITTED_OFFSET, mLogFilePath.getOffset());

@@ -66,12 +66,13 @@ public class Uploader {
 
     private Future<?> upload(LogFilePath localPath) throws Exception {
         String s3Prefix = "s3n://" + mConfig.getS3Bucket() + "/" + mConfig.getS3Path();
-        LogFilePath s3Path = new LogFilePath(s3Prefix, localPath.getTopic(),
-                                             localPath.getPartitions(),
-                                             localPath.getGeneration(),
-                                             localPath.getKafkaPartition(),
-                                             localPath.getOffset(),
-                                             localPath.getExtension());
+        LogFilePath s3Path = mFileRegistry.createLogFilePath(s3Prefix,
+            localPath.getTopic(),
+            localPath.getKafkaPartition(),
+            localPath.getComponents(),
+            localPath.getGeneration(),
+            localPath.getOffset(),
+            localPath.getExtension());
         final String localLogFilename = localPath.getLogFilePath();
         final String s3LogFilename = s3Path.getLogFilePath();
         LOG.info("uploading file " + localLogFilename + " to " + s3LogFilename);
@@ -155,10 +156,13 @@ public class Uploader {
                     if (writer == null) {
                         String localPrefix = mConfig.getLocalPath() + '/' +
                             IdUtil.getLocalMessageDir();
-                        dstPath = new LogFilePath(localPrefix, srcPath.getTopic(),
-                                                  srcPath.getPartitions(), srcPath.getGeneration(),
-                                                  srcPath.getKafkaPartition(), startOffset,
-                                                  extension);
+                        dstPath = mFileRegistry.createLogFilePath(localPrefix,
+                            srcPath.getTopic(),
+                            srcPath.getKafkaPartition(),
+                            srcPath.getComponents(),
+                            srcPath.getGeneration(),
+                            startOffset,
+                            extension);
                         writer = mFileRegistry.getOrCreateWriter(dstPath,
                         		codec);
                     }

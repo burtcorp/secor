@@ -33,6 +33,7 @@ import org.apache.hadoop.io.compress.CompressionCodec;
 import com.pinterest.secor.common.LogFilePath;
 import com.pinterest.secor.io.KeyValue;
 import com.pinterest.secor.util.FileUtil;
+import com.pinterest.secor.common.Components;
 
 /**
  * Sequence file reader writer implementation
@@ -48,6 +49,11 @@ public class SequenceFileReaderWriterFactory implements FileReaderWriterFactory 
     @Override
     public FileWriter BuildFileWriter(LogFilePath logFilePath, CompressionCodec codec) throws IOException {
         return new SequenceFileWriter(logFilePath, codec);
+    }
+
+    @Override
+    public LogFilePath BuildLogFilePath(String prefix, String topic, int partition, Components components, int generation, long offset, String extension) {
+        return new LogFilePath(prefix, topic, partition, components, generation, offset, extension);
     }
 
     protected class SequenceFileReader implements FileReader {
