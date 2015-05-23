@@ -30,7 +30,7 @@ public class ReflectionUtilTest {
     public void setUp() throws Exception {
         PropertiesConfiguration properties = new PropertiesConfiguration();
         mSecorConfig = new SecorConfig(properties);
-        mLogFilePath = LogFilePath.createFromPath("/foo", "/foo/bar/baz/1_1_1");
+        mLogFilePath = LogFileUtil.createFromPath("/foo", "/foo/bar/baz/1_1_1");
     }
 
     @Test

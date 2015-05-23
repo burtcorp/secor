@@ -18,9 +18,11 @@ package com.pinterest.secor.io.impl;
 
 import com.google.common.io.Files;
 import com.pinterest.secor.common.LogFilePath;
+import com.pinterest.secor.common.Components;
 import com.pinterest.secor.io.FileReader;
 import com.pinterest.secor.io.FileWriter;
 import com.pinterest.secor.io.KeyValue;
+import java.util.Arrays;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -36,10 +38,11 @@ public class SequenceFileReaderWriterFactoryTest {
     @Test
     public void testSequenceReadWriteRoundTrip() throws Exception {
         SequenceFileReaderWriterFactory factory = new SequenceFileReaderWriterFactory();
+        Components components = new Components(new String[] {"part-1"}, "test-topic", 0);
         LogFilePath tempLogFilePath = new LogFilePath(Files.createTempDir().toString(),
                 "test-topic",
-                new String[]{"part-1"},
                 0,
+                components,
                 1,
                 0,
                 ".log"

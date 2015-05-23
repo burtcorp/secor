@@ -23,6 +23,7 @@ import com.pinterest.secor.io.FileReader;
 import com.pinterest.secor.io.KeyValue;
 import com.pinterest.secor.util.CompressionUtil;
 import com.pinterest.secor.util.FileUtil;
+import com.pinterest.secor.util.LogFileUtil;
 import com.pinterest.secor.util.ReflectionUtil;
 
 import org.apache.hadoop.io.compress.CompressionCodec;
@@ -56,13 +57,13 @@ public class LogFileVerifier {
         return getPrefix() + "/" + mTopic;
     }
 
-    private void populateTopicPartitionToOffsetToFiles() throws IOException {
+    private void populateTopicPartitionToOffsetToFiles() throws Exception {
         String prefix = getPrefix();
         String topicPrefix = getTopicPrefix();
         String[] paths = FileUtil.listRecursively(topicPrefix);
         for (String path : paths) {
             if (!path.endsWith("/_SUCCESS")) {
-                LogFilePath logFilePath = LogFilePath.createFromPath(prefix, path);
+                LogFilePath logFilePath = LogFileUtil.createFromPath(prefix, path, mConfig); // LogFilePath.createFromPath(prefix, path);
                 TopicPartition topicPartition = new TopicPartition(logFilePath.getTopic(),
                     logFilePath.getKafkaPartition());
                 SortedMap<Long, HashSet<LogFilePath>> offsetToFiles =

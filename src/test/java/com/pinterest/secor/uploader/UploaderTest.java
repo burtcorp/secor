@@ -21,6 +21,7 @@ import com.pinterest.secor.io.FileReader;
 import com.pinterest.secor.io.FileWriter;
 import com.pinterest.secor.io.KeyValue;
 import com.pinterest.secor.util.FileUtil;
+import com.pinterest.secor.util.LogFileUtil;
 import com.pinterest.secor.util.IdUtil;
 
 import junit.framework.TestCase;
@@ -81,7 +82,7 @@ public class UploaderTest extends TestCase {
         super.setUp();
         mTopicPartition = new TopicPartition("some_topic", 0);
 
-        mLogFilePath = LogFilePath.createFromPath("/some_parent_dir",
+        mLogFilePath = LogFileUtil.createFromPath("/some_parent_dir",
                 "/some_parent_dir/some_topic/some_partition/some_other_partition/"
                         + "10_0_00000000000000000010");
 
@@ -93,6 +94,12 @@ public class UploaderTest extends TestCase {
 
         mFileRegistry = Mockito.mock(FileRegistry.class);
         Mockito.when(mFileRegistry.getSize(mTopicPartition)).thenReturn(100L);
+
+        Mockito.when(mFileRegistry.createLogFilePath("/some_parent_dir", "some_topic", 0, new Components(new String[] { "some_partition" }, "some_topic", 10), 10, 0, "")).thenReturn(mLogFilePath);
+
+        LogFilePath s3LogFilePath = new LogFilePath("s3n://some_bucket/some_s3_parent_dir", "some_topic", 0, new Components(new String[] { "some_partition", "some_other_partition" }, "some_topic", 10), 10, 10, "");
+        Mockito.when(mFileRegistry.createLogFilePath("s3n://some_bucket/some_s3_parent_dir", "some_topic", 0, new Components(new String[] { "some_partition", "some_other_partition" }, "some_topic", 10), 10, 10, "")).thenReturn(s3LogFilePath);
+
         HashSet<TopicPartition> topicPartitions = new HashSet<TopicPartition>();
         topicPartitions.add(mTopicPartition);
         Mockito.when(mFileRegistry.getTopicPartitions()).thenReturn(
@@ -196,10 +203,11 @@ public class UploaderTest extends TestCase {
                 .thenReturn("some_message_dir");
 
         FileWriter writer = Mockito.mock(FileWriter.class);
-        LogFilePath dstLogFilePath = LogFilePath.createFromPath(
+        LogFilePath dstLogFilePath = LogFileUtil.createFromPath(
                 "/some_parent_dir/some_message_dir",
                 "/some_parent_dir/some_message_dir/some_topic/some_partition/"
                         + "some_other_partition/10_0_00000000000000000021");
+        Mockito.when(mFileRegistry.createLogFilePath("/some_parent_dir/some_message_dir", "some_topic", 0, new Components(new String[] { "some_partition", "some_other_partition" }, "some_topic", 10), 10, 21, "")).thenReturn(dstLogFilePath);
         Mockito.when(mFileRegistry.getOrCreateWriter(dstLogFilePath, null))
                 .thenReturn(writer);
 

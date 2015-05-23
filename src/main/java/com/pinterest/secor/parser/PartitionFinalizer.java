@@ -122,10 +122,13 @@ public class PartitionFinalizer {
 
     private NavigableSet<Calendar> getPartitions(String topic) throws IOException, ParseException {
         final String s3Prefix = "s3n://" + mConfig.getS3Bucket() + "/" + mConfig.getS3Path();
-        String[] partitions = {"dt="};
-        LogFilePath logFilePath = new LogFilePath(s3Prefix, topic, partitions,
-            mConfig.getGeneration(), 0, 0, mFileExtension);
-        String parentDir = logFilePath.getLogFileParentDir();
+        String[] sPartitions = {"dt="};
+        Components components = new Components(new String[]{}, topic, mConfig.getGeneration());
+
+        LogFilePath logFilePath = new LogFilePath(s3Prefix, topic, 0, components,
+            mConfig.getGeneration(), 0, mFileExtension);
+        // expects topic as part of path
+        String parentDir = logFilePath.getLogFileDir();
         String[] partitionDirs = FileUtil.list(parentDir);
         Pattern pattern = Pattern.compile(".*/dt=(\\d\\d\\d\\d-\\d\\d-\\d\\d)$");
         TreeSet<Calendar> result = new TreeSet<Calendar>();
@@ -152,9 +155,10 @@ public class PartitionFinalizer {
         format.setTimeZone(TimeZone.getTimeZone("UTC"));
         for (Calendar partition : partitionDates) {
             String partitionStr = format.format(partition.getTime());
-            String[] partitions = {"dt=" + partitionStr};
-            LogFilePath logFilePath = new LogFilePath(s3Prefix, topic, partitions,
-                mConfig.getGeneration(), 0, 0, mFileExtension);
+            String[] pathComponents = new String[] { "dt=" + partitionStr };
+            Components components = new Components(pathComponents, topic, mConfig.getGeneration());
+            LogFilePath logFilePath = new LogFilePath(s3Prefix, topic, 0, components,
+                mConfig.getGeneration(), 0, mFileExtension);
             String logFileDir = logFilePath.getLogFileDir();
             assert FileUtil.exists(logFileDir) : "FileUtil.exists(" + logFileDir + ")";
             String successFilePath = logFileDir + "/_SUCCESS";

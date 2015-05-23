@@ -23,17 +23,19 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 
+import com.pinterest.secor.common.Components;
+import com.pinterest.secor.common.LogFilePath;
 import com.pinterest.secor.io.FileReader;
 import com.pinterest.secor.io.FileReaderWriterFactory;
 import com.pinterest.secor.io.FileWriter;
+import com.pinterest.secor.io.KeyValue;
+import com.pinterest.secor.util.FileUtil;
+
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.compress.CompressionCodec;
 
 import com.google.common.io.CountingOutputStream;
-import com.pinterest.secor.common.LogFilePath;
-import com.pinterest.secor.io.KeyValue;
-import com.pinterest.secor.util.FileUtil;
 
 /**
  * Delimited Text File Reader Writer with Compression
@@ -41,7 +43,7 @@ import com.pinterest.secor.util.FileUtil;
  * @author Praveen Murugesan (praveen@uber.com)
  */
 public class DelimitedTextFileReaderWriterFactory implements FileReaderWriterFactory {
-    private static final byte DELIMITER = '\n';
+    protected static final byte DELIMITER = '\n';
 
     @Override
     public FileReader BuildFileReader(LogFilePath logFilePath, CompressionCodec codec)
@@ -54,9 +56,14 @@ public class DelimitedTextFileReaderWriterFactory implements FileReaderWriterFac
         return new DelimitedTextFileWriter(logFilePath, codec);
     }
 
+    @Override
+    public LogFilePath BuildLogFilePath(String prefix, String topic, int partition, Components components, int generation, long offset, String extension) {
+        return new LogFilePath(prefix, topic, partition, components, generation, offset, extension);
+    }
+
     protected class DelimitedTextFileReader implements FileReader {
-        private final BufferedInputStream mReader;
-        private long mOffset;
+        protected final BufferedInputStream mReader;
+        protected long mOffset;
 
         public DelimitedTextFileReader(LogFilePath path, CompressionCodec codec) throws IOException {
             Path fsPath = new Path(path.getLogFilePath());
@@ -70,31 +77,40 @@ public class DelimitedTextFileReaderWriterFactory implements FileReaderWriterFac
 
         @Override
         public KeyValue next() throws IOException {
-            ByteArrayOutputStream messageBuffer = new ByteArrayOutputStream();
-            int nextByte;
-            while ((nextByte = mReader.read()) != DELIMITER) {
-                if (nextByte == -1) { // end of stream?
-                    if (messageBuffer.size() == 0) { // if no byte read
-                        return null;
-                    } else { // if bytes followed by end of stream: framing error
-                        throw new EOFException(
-                                "Non-empty message without delimiter");
-                    }
-                }
-                messageBuffer.write(nextByte);
+            byte[] messageBuffer = readUntilDelimiter(mReader);
+            if (messageBuffer == null) {
+                return null;
+            } else {
+                return new KeyValue(this.mOffset++, messageBuffer);
             }
-            return new KeyValue(this.mOffset++, messageBuffer.toByteArray());
         }
 
         @Override
         public void close() throws IOException {
             this.mReader.close();
         }
+
+        protected byte[] readUntilDelimiter(BufferedInputStream reader) throws IOException {
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+            int nextByte;
+            while ((nextByte = reader.read()) != DELIMITER) {
+                if (nextByte == -1) { // end of stream?
+                    if (buffer.size() == 0) { // if no byte read
+                        return null;
+                    } else { // if bytes followed by end of stream: framing error
+                        throw new EOFException(
+                                "Non-empty message without delimiter");
+                    }
+                }
+                buffer.write(nextByte);
+            }
+            return buffer.toByteArray();
+        }
     }
 
     protected class DelimitedTextFileWriter implements FileWriter {
-        private final CountingOutputStream mCountingStream;
-        private final BufferedOutputStream mWriter;
+        protected final CountingOutputStream mCountingStream;
+        protected final BufferedOutputStream mWriter;
 
         public DelimitedTextFileWriter(LogFilePath path, CompressionCodec codec) throws IOException {
             Path fsPath = new Path(path.getLogFilePath());
