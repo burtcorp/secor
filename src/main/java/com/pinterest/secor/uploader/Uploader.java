@@ -52,6 +52,7 @@ public class Uploader {
     private ZookeeperConnector mZookeeperConnector;
     private long mMaxFileSizeBytes;
     private long mMaxFileAgeSeconds;
+    private String mS3Prefix;
 
     public Uploader(SecorConfig config, OffsetTracker offsetTracker, FileRegistry fileRegistry) {
         this(config, offsetTracker, fileRegistry, new ZookeeperConnector(config));
@@ -66,16 +67,25 @@ public class Uploader {
         mZookeeperConnector = zookeeperConnector;
         mMaxFileSizeBytes = mConfig.getMaxFileSizeBytes();
         mMaxFileAgeSeconds = mConfig.getMaxFileAgeSeconds();
+        mS3Prefix = constructS3Prefix();
+    }
+
+    private String constructS3Prefix() {
+        String prefix = "s3n://" + mConfig.getS3Bucket();
+        if (!mConfig.getS3Path().isEmpty()) {
+          prefix = prefix + "/" + mConfig.getS3Path();
+        }
+        return prefix;
     }
 
     private Future<?> upload(LogFilePath localPath) throws Exception {
-        String s3Prefix = "s3n://" + mConfig.getS3Bucket() + "/" + mConfig.getS3Path();
-        LogFilePath s3Path = new LogFilePath(s3Prefix, localPath.getTopic(),
-                                             localPath.getPartitions(),
-                                             localPath.getGeneration(),
-                                             localPath.getKafkaPartition(),
-                                             localPath.getOffset(),
-                                             localPath.getExtension());
+        LogFilePath s3Path = mFileRegistry.createLogFilePath(mS3Prefix,
+            localPath.getTopic(),
+            localPath.getKafkaPartition(),
+            localPath.getComponents(),
+            localPath.getGeneration(),
+            localPath.getOffset(),
+            localPath.getExtension());
         final String localLogFilename = localPath.getLogFilePath();
         final String s3LogFilename = s3Path.getLogFilePath();
         LOG.info("uploading file " + localLogFilename + " to " + s3LogFilename);
@@ -163,10 +173,13 @@ public class Uploader {
                     if (writer == null) {
                         String localPrefix = mConfig.getLocalPath() + '/' +
                             IdUtil.getLocalMessageDir();
-                        dstPath = new LogFilePath(localPrefix, srcPath.getTopic(),
-                                                  srcPath.getPartitions(), srcPath.getGeneration(),
-                                                  srcPath.getKafkaPartition(), startOffset,
-                                                  extension);
+                        dstPath = mFileRegistry.createLogFilePath(localPrefix,
+                            srcPath.getTopic(),
+                            srcPath.getKafkaPartition(),
+                            srcPath.getComponents(),
+                            srcPath.getGeneration(),
+                            startOffset,
+                            extension);
                         writer = mFileRegistry.getOrCreateWriter(dstPath,
                         		codec);
                     }

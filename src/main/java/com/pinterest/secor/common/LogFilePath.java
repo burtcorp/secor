@@ -16,11 +16,15 @@
  */
 package com.pinterest.secor.common;
 
-import com.pinterest.secor.message.ParsedMessage;
 import org.apache.commons.lang.StringUtils;
 
+import com.pinterest.secor.common.Components;
+import com.pinterest.secor.util.FileUtil;
+
+import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.io.IOException;
 
 /**
  * LogFilePath represents path of a log file.  It contains convenience method for building and
@@ -42,128 +46,65 @@ import java.util.Arrays;
  * @author Pawel Garbacki (pawel@pinterest.com)
  */
 public class LogFilePath {
+    protected static final String PATH_DELIMITER = "/";
+    protected static final String FILENAME_DELIMITER = "_";
     private String mPrefix;
     private String mTopic;
-    private String[] mPartitions;
+    private Components mComponents;
     private int mGeneration;
     private int mKafkaPartition;
     private long mOffset;
     private String mExtension;
 
-    public LogFilePath(String prefix, int generation, long lastCommittedOffset,
-                       ParsedMessage message, String extension) {
-        mPrefix = prefix;
-        mTopic = message.getTopic();
-        mPartitions = message.getPartitions();
-        mGeneration = generation;
-        mKafkaPartition = message.getKafkaPartition();
-        mOffset = lastCommittedOffset;
-        mExtension = extension;
-    }
-
-    public LogFilePath(String prefix, String topic, String[] partitions, int generation,
-                       int kafkaPartition, long offset, String extension) {
-        mPrefix = prefix;
-        mTopic = topic;
-        mPartitions = partitions;
-        mGeneration = generation;
-        mKafkaPartition = kafkaPartition;
-        mOffset = offset;
-        mExtension = extension;
-    }
-
-    private static String[] subArray(String[] array, int startIndex, int endIndex) {
-        String[] result = new String[endIndex - startIndex + 1];
-        for (int i = startIndex; i <= endIndex; ++i) {
-            result[i - startIndex] = array[i];
-        }
-        return result;
-    }
-
-    public LogFilePath(String prefix, String path) {
-        assert path.startsWith(prefix): path + ".startsWith(" + prefix + ")";
-
-        mPrefix = prefix;
-
-        int prefixLength = prefix.length();
-        if (!prefix.endsWith("/")) {
-            prefixLength++;
-        }
-        String suffix = path.substring(prefixLength);
-        String[] pathElements = suffix.split("/");
-        // Suffix should contain a topic, at least one partition, and the basename.
-        assert pathElements.length >= 3: Arrays.toString(pathElements) + ".length >= 3";
-
-        mTopic = pathElements[0];
-        mPartitions = subArray(pathElements, 1, pathElements.length - 2);
-
-        // Parse basename.
-        String basename = pathElements[pathElements.length - 1];
-        // Remove extension.
-        int lastIndexOf = basename.lastIndexOf('.');
-        if (lastIndexOf >= 0) {
-            mExtension = basename.substring(lastIndexOf, basename.length());
-            basename = basename.substring(0, lastIndexOf);
-        } else {
-            mExtension = "";
-        }
-        String[] basenameElements = basename.split("_");
-        assert basenameElements.length == 3: Integer.toString(basenameElements.length) + " == 3";
-        mGeneration = Integer.parseInt(basenameElements[0]);
-        mKafkaPartition = Integer.parseInt(basenameElements[1]);
-        mOffset = Long.parseLong(basenameElements[2]);
-    }
-
-    public String getLogFileParentDir() {
-        ArrayList<String> elements = new ArrayList<String>();
-        elements.add(mPrefix);
-        elements.add(mTopic);
-        return StringUtils.join(elements, "/");
+    public LogFilePath(String prefix, String topic, int partition, Components components, int generation, long offset, String extension) {
+        this.mPrefix = prefix;
+        this.mTopic = topic;
+        this.mKafkaPartition = partition;
+        this.mComponents = components;
+        this.mGeneration = generation;
+        this.mOffset = offset;
+        this.mExtension = extension;
     }
 
     public String getLogFileDir() {
-        ArrayList<String> elements = new ArrayList<String>();
+        List<String> elements = new ArrayList<String>();
         elements.add(getLogFileParentDir());
-        for (String partition : mPartitions) {
-            elements.add(partition);
+        for (String component : mComponents.getPath()) {
+          elements.add(component);
         }
         return StringUtils.join(elements, "/");
     }
 
-    private String getLogFileBasename() {
-        ArrayList<String> basenameElements = new ArrayList<String>();
-        basenameElements.add(Integer.toString(mGeneration));
-        basenameElements.add(Integer.toString(mKafkaPartition));
-        basenameElements.add(String.format("%020d", mOffset));
-        return StringUtils.join(basenameElements, "_");
-    }
-
     public String getLogFilePath() {
-        String basename = getLogFileBasename();
-
-        ArrayList<String> pathElements = new ArrayList<String>();
+        List<String> pathElements = new ArrayList<String>();
         pathElements.add(getLogFileDir());
-        pathElements.add(basename);
-
+        pathElements.add(getLogFileBasename());
         return StringUtils.join(pathElements, "/") + mExtension;
     }
 
     public String getLogFileCrcPath() {
         String basename = "." + getLogFileBasename() + ".crc";
-
-        ArrayList<String> pathElements = new ArrayList<String>();
+        List<String> pathElements = new ArrayList<String>();
         pathElements.add(getLogFileDir());
         pathElements.add(basename);
-
         return StringUtils.join(pathElements, "/");
+    }
+
+    public void delete() throws IOException {
+        FileUtil.delete(getLogFileCrcPath());
+        FileUtil.delete(getLogFilePath());
+    }
+
+    public String getPrefix() {
+        return mPrefix;
     }
 
     public String getTopic() {
         return mTopic;
     }
 
-    public String[] getPartitions() {
-        return mPartitions;
+    public Components getComponents() {
+        return mComponents;
     }
 
     public int getGeneration() {
@@ -192,7 +133,7 @@ public class LogFilePath {
         if (mGeneration != that.mGeneration) return false;
         if (mKafkaPartition != that.mKafkaPartition) return false;
         if (mOffset != that.mOffset) return false;
-        if (!Arrays.equals(mPartitions, that.mPartitions)) return false;
+        if (!mComponents.equals(that.mComponents)) return false;
         if (mPrefix != null ? !mPrefix.equals(that.mPrefix) : that.mPrefix != null) return false;
         if (mTopic != null ? !mTopic.equals(that.mTopic) : that.mTopic != null) return false;
 
@@ -203,7 +144,7 @@ public class LogFilePath {
     public int hashCode() {
         int result = mPrefix != null ? mPrefix.hashCode() : 0;
         result = 31 * result + (mTopic != null ? mTopic.hashCode() : 0);
-        result = 31 * result + (mPartitions != null ? Arrays.hashCode(mPartitions) : 0);
+        result = 31 * result + (mComponents != null ? mComponents.hashCode() : 0);
         result = 31 * result + mGeneration;
         result = 31 * result + mKafkaPartition;
         result = 31 * result + (int) (mOffset ^ (mOffset >>> 32));
@@ -213,5 +154,29 @@ public class LogFilePath {
     @Override
     public String toString() {
         return getLogFilePath();
+    }
+
+    protected String getPathDelimiter() {
+        return PATH_DELIMITER;
+    }
+
+    protected String getFilenameDelimiter() {
+        return FILENAME_DELIMITER;
+    }
+
+    protected String getLogFileBasename() {
+        List<String> basenameElements = new ArrayList<String>();
+        for (String component : mComponents.getFilename()) {
+          basenameElements.add(component);
+        }
+        basenameElements.add(Integer.toString(mKafkaPartition));
+        basenameElements.add(String.format("%020d", mOffset));
+        return StringUtils.join(basenameElements, getFilenameDelimiter());
+    }
+
+    protected String getLogFileParentDir() {
+        List<String> elements = new ArrayList<String>();
+        elements.add(mPrefix);
+        return StringUtils.join(elements, "/");
     }
 }

@@ -37,6 +37,7 @@ public class QuboleClient {
         mApiToken = config.getQuboleApiToken();
     }
 
+    @SuppressWarnings("unchecked")
     private Map makeRequest(URL url, String body) throws IOException {
         HttpURLConnection connection = null;
         try {

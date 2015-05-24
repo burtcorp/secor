@@ -89,7 +89,12 @@ public class MessageWriter {
                                                            message.getKafkaPartition());
         if (!mDeduplicator.isPresent(topicPartition, message.getKey())) {
             long offset = mOffsetTracker.getAdjustedCommittedOffsetCount(topicPartition);
-            LogFilePath path = new LogFilePath(mLocalPrefix, mConfig.getGeneration(), offset, message,
+            LogFilePath path = mFileRegistry.createLogFilePath(mLocalPrefix,
+                message.getTopic(),
+                message.getKafkaPartition(),
+                message.getComponents(),
+                mConfig.getGeneration(),
+                offset,
                 mFileExtension);
             FileWriter writer = mFileRegistry.getOrCreateWriter(path, mCodec);
             writer.write(new KeyValue(message.getOffset(), message.getPayload()));

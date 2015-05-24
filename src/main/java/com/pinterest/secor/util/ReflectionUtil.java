@@ -16,8 +16,8 @@
  */
 package com.pinterest.secor.util;
 
-import com.pinterest.secor.common.LogFilePath;
 import com.pinterest.secor.common.SecorConfig;
+import com.pinterest.secor.common.LogFilePath;
 
 import com.pinterest.secor.io.FileReader;
 import com.pinterest.secor.io.FileWriter;
@@ -69,7 +69,7 @@ public class ReflectionUtil {
      * @return a FileReaderWriterFactory with the runtime type of the class passed by name
      * @throws Exception
      */
-    private static FileReaderWriterFactory createFileReaderWriterFactory(String className) throws Exception {
+    public static FileReaderWriterFactory createFileReaderWriterFactory(String className) throws Exception {
         Class<?> clazz = Class.forName(className);
         if (!FileReaderWriterFactory.class.isAssignableFrom(clazz)) {
             throw new IllegalArgumentException(String.format("The class '%s' is not assignable to '%s'.",

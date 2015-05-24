@@ -42,6 +42,7 @@ import com.pinterest.secor.common.SecorConfig;
 import com.pinterest.secor.io.impl.DelimitedTextFileReaderWriterFactory;
 import com.pinterest.secor.io.impl.SequenceFileReaderWriterFactory;
 import com.pinterest.secor.util.ReflectionUtil;
+import com.pinterest.secor.util.LogFileUtil;
 
 import junit.framework.TestCase;
 
@@ -64,31 +65,47 @@ public class FileReaderWriterFactoryTest extends TestCase {
     private LogFilePath mLogFilePath;
     private LogFilePath mLogFilePathGz;
     private SecorConfig mConfig;
+    private FileReaderWriterFactory mFileReaderWriterFactory;
 
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-        mLogFilePath = new LogFilePath("/some_parent_dir", PATH);
-        mLogFilePathGz = new LogFilePath("/some_parent_dir", PATH_GZ);
+    private void setUpLogFilePaths() throws Exception {
+        LogFilePath path = LogFileUtil.createFromPath("/some_parent_dir", PATH);
+        LogFilePath pathGz = LogFileUtil.createFromPath("/some_parent_dir", PATH_GZ);
+        mLogFilePath = mFileReaderWriterFactory.BuildLogFilePath(path.getPrefix(), path.getTopic(), path.getKafkaPartition(),
+            path.getComponents(), path.getGeneration(), path.getOffset(), path.getExtension());
+        mLogFilePathGz = mFileReaderWriterFactory.BuildLogFilePath(pathGz.getPrefix(), pathGz.getTopic(), pathGz.getKafkaPartition(),
+            pathGz.getComponents(), pathGz.getGeneration(), pathGz.getOffset(), pathGz.getExtension());
     }
 
-    private void setupSequenceFileReaderConfig() {
+    private void setupSequenceFileReaderConfig() throws Exception {
         PropertiesConfiguration properties = new PropertiesConfiguration();
         properties.addProperty("secor.file.reader.writer.factory",
                 "com.pinterest.secor.io.impl.SequenceFileReaderWriterFactory");
         mConfig = new SecorConfig(properties);
+        mFileReaderWriterFactory = ReflectionUtil.createFileReaderWriterFactory(mConfig.getFileReaderWriterFactory());
+        setUpLogFilePaths();
     }
 
-    private void setupDelimitedTextFileWriterConfig() {
+    private void setupDelimitedTextFileWriterConfig() throws Exception {
         PropertiesConfiguration properties = new PropertiesConfiguration();
         properties.addProperty("secor.file.reader.writer.factory",
                 "com.pinterest.secor.io.impl.DelimitedTextFileReaderWriterFactory");
         mConfig = new SecorConfig(properties);
+        mFileReaderWriterFactory = ReflectionUtil.createFileReaderWriterFactory(mConfig.getFileReaderWriterFactory());
+        setUpLogFilePaths();
     }
 
     private void mockDelimitedTextFileWriter(boolean isCompressed) throws Exception {
         PowerMockito.mockStatic(FileSystem.class);
         FileSystem fs = Mockito.mock(FileSystem.class);
+        FileOutputStream fos = PowerMockito.mock(FileOutputStream.class);
+        FileInputStream fis = PowerMockito.mock(FileInputStream.class);
+        PowerMockito.whenNew(FileOutputStream.class).withAnyArguments()
+                .thenReturn(fos);
+        PowerMockito.whenNew(FileInputStream.class).withAnyArguments()
+                .thenReturn(fis);
+        java.io.FileWriter fw = Mockito.mock(java.io.FileWriter.class);
+        PowerMockito.whenNew(java.io.FileWriter.class).withAnyArguments()
+                .thenReturn(fw);
         Mockito.when(
                 FileSystem.get(Mockito.any(URI.class),
                         Mockito.any(Configuration.class))).thenReturn(fs);

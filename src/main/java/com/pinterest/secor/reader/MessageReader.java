@@ -118,6 +118,7 @@ public class MessageReader {
     public Message read() {
         assert hasNext();
         RateLimitUtil.acquire();
+        @SuppressWarnings("unchecked")
         MessageAndMetadata<byte[], byte[]> kafkaMessage = mIterator.next();
         Message message = new Message(kafkaMessage.topic(), kafkaMessage.partition(),
                                       kafkaMessage.offset(), kafkaMessage.key(), kafkaMessage.message());
