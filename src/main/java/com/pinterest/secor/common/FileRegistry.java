@@ -237,4 +237,31 @@ public class FileRegistry {
             topicPartition.getPartition(), Long.toString(result));
         return result;
     }
+
+    /**
+     * Get the creation age of the least recently created file in a given topic partition.
+     * @param topicPartition The topic partition to get the age of.
+     * @return Age of the least recently created file in the topic partition or -1 if the partition
+     *     does not contain any files.
+     * @throws IOException
+     */
+    public long getCreatedAgeSec(TopicPartition topicPartition) throws IOException {
+        long now = System.currentTimeMillis() / 1000L;
+        long result = -1;
+        Collection<LogFilePath> paths = getPaths(topicPartition);
+        for (LogFilePath path : paths) {
+            Long creationTime = mCreationTimes.get(path);
+            if (creationTime == null) {
+                LOG.warn("no creation time found for path " + path);
+                creationTime = now;
+            }
+            long age = now - creationTime;
+            if (age > result) {
+                result = age;
+            }
+        }
+        StatsUtil.setLabel("secor.modification_age_sec." + topicPartition.getTopic() + "." +
+            topicPartition.getPartition(), Long.toString(result));
+        return result;
+    }
 }
