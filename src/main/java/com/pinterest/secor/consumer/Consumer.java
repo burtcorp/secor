@@ -55,8 +55,6 @@ public class Consumer extends Thread {
     private MessageParser mMessageParser;
     private OffsetTracker mOffsetTracker;
     private Uploader mUploader;
-    // TODO(pawel): we should keep a count per topic partition.
-    private double mUnparsableMessages;
 
     public Consumer(SecorConfig config) {
         mConfig = config;
@@ -69,7 +67,6 @@ public class Consumer extends Thread {
         mMessageWriter = new MessageWriter(mConfig, mOffsetTracker, fileRegistry);
         mMessageParser = ReflectionUtil.createMessageParser(mConfig.getMessageParserClass(), mConfig);
         mUploader = new Uploader(mConfig, mOffsetTracker, fileRegistry);
-        mUnparsableMessages = 0.;
     }
 
     @Override
@@ -134,15 +131,8 @@ public class Consumer extends Thread {
             ParsedMessage parsedMessage = null;
             try {
                 parsedMessage = new ParsedMessage(rawMessage, mMessageParser.parse(rawMessage));
-                final double DECAY = 0.999;
-                mUnparsableMessages *= DECAY;
             } catch (Exception e) {
-                mUnparsableMessages++;
-                final double MAX_UNPARSABLE_MESSAGES = 1000.;
-                if (mUnparsableMessages > MAX_UNPARSABLE_MESSAGES) {
-                    throw new RuntimeException("Failed to parse message " + rawMessage, e);
-                }
-                LOG.warn("Failed to parse message " + rawMessage, e);
+                throw new RuntimeException("Failed to parse message " + rawMessage, e);
             }
 
             if (parsedMessage != null) {
