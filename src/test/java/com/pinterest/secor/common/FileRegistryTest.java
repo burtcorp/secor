@@ -208,4 +208,17 @@ public class FileRegistryTest extends TestCase {
 
         assertEquals(90, mRegistry.getModificationAgeSec(mTopicPartition));
     }
+
+    public void testGetCreatedAgeSec() throws Exception {
+        PowerMockito.mockStatic(System.class);
+        PowerMockito.when(System.currentTimeMillis())
+            .thenReturn(5000L) // 95
+            .thenReturn(10000L) // 90
+            .thenReturn(100000L);
+        createWriter();
+        String otherPath = "/some_parent_dir/some_topic/some_partition/some_other_partition/10_0_00000000000000000200";
+        LogFilePath otherLogFilePath = LogFileUtil.createFromPath("/some_parent_dir", otherPath);
+        mRegistry.getOrCreateWriter(otherLogFilePath, null);
+        assertEquals(95, mRegistry.getCreatedAgeSec(mTopicPartition));
+    }
 }

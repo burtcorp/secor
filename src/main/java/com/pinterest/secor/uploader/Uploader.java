@@ -45,6 +45,8 @@ public class Uploader {
     private static final Logger LOG = LoggerFactory.getLogger(Uploader.class);
 
     private static final ExecutorService executor = Executors.newFixedThreadPool(256);
+    private static final String CREATED_STRATEGY = "created";
+    private static final String MODIFIED_STRATEGY = "modified";
 
     private SecorConfig mConfig;
     private OffsetTracker mOffsetTracker;
@@ -53,6 +55,7 @@ public class Uploader {
     private long mMaxFileSizeBytes;
     private long mMaxFileAgeSeconds;
     private String mS3Prefix;
+    private String mFileAgeUploadStrategy;
 
     public Uploader(SecorConfig config, OffsetTracker offsetTracker, FileRegistry fileRegistry) {
         this(config, offsetTracker, fileRegistry, new ZookeeperConnector(config));
@@ -68,6 +71,7 @@ public class Uploader {
         mMaxFileSizeBytes = mConfig.getMaxFileSizeBytes();
         mMaxFileAgeSeconds = mConfig.getMaxFileAgeSeconds();
         mS3Prefix = constructS3Prefix();
+        mFileAgeUploadStrategy = mConfig.getFileAgeUploadStrategy();
     }
 
     private String constructS3Prefix() {
@@ -208,10 +212,22 @@ public class Uploader {
         }
     }
 
+    private long getFileAgeSec(TopicPartition topicPartition) throws IOException {
+        long fileAgeSec = -1;
+        if (mFileAgeUploadStrategy.equals(MODIFIED_STRATEGY)) {
+            fileAgeSec = mFileRegistry.getModificationAgeSec(topicPartition);
+        } else if (mFileAgeUploadStrategy.equals(CREATED_STRATEGY)) {
+            fileAgeSec = mFileRegistry.getCreatedAgeSec(topicPartition);
+        } else {
+            throw new IllegalArgumentException("Invalid file age upload strategy: " + mFileAgeUploadStrategy);
+        }
+        return fileAgeSec;
+    }
+
     private void checkTopicPartition(TopicPartition topicPartition) throws Exception {
         final long size = mFileRegistry.getSize(topicPartition);
-        final long modificationAgeSec = mFileRegistry.getModificationAgeSec(topicPartition);
-        if (size >= mMaxFileSizeBytes || modificationAgeSec >= mMaxFileAgeSeconds) {
+        final long fileAgeSec = getFileAgeSec(topicPartition);
+        if (size >= mMaxFileSizeBytes || fileAgeSec >= mMaxFileAgeSeconds) {
             long newOffsetCount = mZookeeperConnector.getCommittedOffsetCount(topicPartition);
             long oldOffsetCount = mOffsetTracker.setCommittedOffsetCount(topicPartition,
                     newOffsetCount);

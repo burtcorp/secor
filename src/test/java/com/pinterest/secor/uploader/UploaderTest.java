@@ -91,6 +91,7 @@ public class UploaderTest extends TestCase {
         Mockito.when(mConfig.getMaxFileSizeBytes()).thenReturn(10L);
         Mockito.when(mConfig.getS3Bucket()).thenReturn("some_bucket");
         Mockito.when(mConfig.getS3Path()).thenReturn("some_s3_parent_dir");
+        Mockito.when(mConfig.getFileAgeUploadStrategy()).thenReturn("modified");
 
         mOffsetTracker = Mockito.mock(OffsetTracker.class);
 
@@ -151,6 +152,13 @@ public class UploaderTest extends TestCase {
         Mockito.verify(mOffsetTracker).setCommittedOffsetCount(mTopicPartition,
                 21L);
         Mockito.verify(mZookeeperConnector).unlock(lockPath);
+    }
+
+    public void testUploadFilesCreatedStrategy() throws Exception {
+        Mockito.when(mConfig.getFileAgeUploadStrategy()).thenReturn("created");
+        mUploader = new TestUploader(mConfig, mOffsetTracker, mFileRegistry, mZookeeperConnector);
+        mUploader.applyPolicy();
+        Mockito.verify(mFileRegistry).getCreatedAgeSec(mTopicPartition);
     }
 
     public void testDeleteTopicPartition() throws Exception {
