@@ -40,6 +40,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.zip.ZipException;
 
 /**
  * Message reader consumer raw Kafka messages.
@@ -112,7 +113,17 @@ public class MessageReader {
     }
 
     public boolean hasNext() {
-        return mIterator.hasNext();
+        while (true) {
+            try {
+                return mIterator.hasNext();
+            } catch (Exception e) {
+                if (e instanceof ZipException) {
+                    LOG.warn(String.format("Corrupt GZIP data, skipping message: %s", e.getMessage()), e);
+                } else {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
     }
 
     public Message read() {
