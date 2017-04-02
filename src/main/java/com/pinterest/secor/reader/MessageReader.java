@@ -113,12 +113,17 @@ public class MessageReader {
     }
 
     public boolean hasNext() {
-        while (true) {
+        for (int i = 0; i < 10; i++) {
             try {
                 return mIterator.hasNext();
             } catch (Exception e) {
                 if (e instanceof ZipException) {
                     LOG.warn(String.format("Corrupt GZIP data, skipping message: %s", e.getMessage()), e);
+                    try {
+                      mIterator.next();
+                    } catch (Exception ignored) {
+                      LOG.warn(String.format("Error while skipping message, suppressed: %s", e.getMessage()), e);
+                    }
                 } else if (e instanceof RuntimeException) {
                     throw (RuntimeException) e;
                 } else {
@@ -126,6 +131,7 @@ public class MessageReader {
                 }
             }
         }
+        throw new RuntimeException("Too many failures while trying to find out if there is a next message");
     }
 
     public Message read() {
