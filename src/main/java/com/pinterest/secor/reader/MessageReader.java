@@ -119,6 +119,8 @@ public class MessageReader {
             } catch (Exception e) {
                 if (e instanceof ZipException) {
                     LOG.warn(String.format("Corrupt GZIP data, skipping message: %s", e.getMessage()), e);
+                } else if (e instanceof RuntimeException) {
+                    throw (RuntimeException) e;
                 } else {
                     throw new RuntimeException(e);
                 }
